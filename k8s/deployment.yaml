@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  selector:
+    matchLabels:
+      # Must match metadata name
+      app: postgres
+  template:
+    metadata:
+      labels:
+        # Must match metadata name
+        app: postgres
+    spec:
+      containers:
+        # Must match metadata name
+        - name: postgres
+          image: postgres:13.16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: fakeshop
+            - name: POSTGRES_USER
+              value: fakeshop
+            - name: POSTGRES_PASSWORD
+              value: fakeshop123456
+
+---
+
+# Database Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector:
+    # Must match metadata name
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+
+# Deploys web application
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fakeshop
+spec:
+  selector:
+    matchLabels:
+      # Must match metadata name
+      app: fakeshop
+  template:
+    metadata:
+      labels:
+        # Must match metadata name
+        app: fakeshop
+    spec:
+      containers:
+        # Must match metadata name
+        - name: fakeshop
+          image: tasipasin96/fake-shop:0.01
+          ports:
+            - containerPort: 5000
+          env:
+            # Use the metadata name from DB service
+            - name: DB_HOST
+              value: postgres
+            - name: DB_USER
+              value: fakeshop
+            - name: DB_PASSWORD
+              value: fakeshop123456
+            - name: DB_NAME
+              value: fakeshop
+            - name: FLASK_APP
+              value: index.py
+
+---
+
+# Application Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: fakeshop
+spec:
+  selector:
+    # Must match metadata name
+    app: fakeshop
+  ports:
+    # Port to be accessed (Redirect the internal port 5000 to external 80)
+    - port: 80
+      targetPort: 5000
+  type: LoadBalancer
+  # type: NodePort
